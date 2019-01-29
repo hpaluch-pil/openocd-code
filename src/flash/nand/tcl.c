@@ -362,7 +362,8 @@ COMMAND_HANDLER(handle_nand_verify_command)
 			duration_kbps(&file.bench, dev.size));
 	}
 
-	return nand_fileio_cleanup(&dev);
+	retval = nand_fileio_cleanup(&dev);
+	return  verify_error ? ERROR_FAIL : retval;
 }
 
 COMMAND_HANDLER(handle_nand_dump_command)
