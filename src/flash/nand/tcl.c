@@ -282,6 +282,7 @@ COMMAND_HANDLER(handle_nand_write_command)
 
 COMMAND_HANDLER(handle_nand_verify_command)
 {
+	int verify_error = 0;
 	struct nand_device *nand = NULL;
 	struct nand_fileio_state file;
 	int retval = CALL_COMMAND_HANDLER(nand_fileio_parse_args,
@@ -332,7 +333,7 @@ COMMAND_HANDLER(handle_nand_verify_command)
 				unsigned i=0;
 				for(i=0;i<dev.page_size;i++){
 					if (dev.page[i]!=file.page[i]){
-			command_print(CMD_CTX, "       "
+			command_print(CMD_CTX, "     "
 				"Data at 0x%8.8" PRIx32 " (offset in page: 0x%x) expected byte 0x%02" PRIx8 " <> 0x%02" PRIx8, dev.address+i,i,file.page[i],dev.page[i]);
 					}
 				}
@@ -341,14 +342,12 @@ COMMAND_HANDLER(handle_nand_verify_command)
 				unsigned i=0;
 				for(i=0;i<dev.oob_size;i++){
 					if (dev.oob[i]!=file.oob[i]){
-			command_print(CMD_CTX, "       "
+			command_print(CMD_CTX, "     "
 				"OOB data at offset 0x%08x in OOB - expected byte 0x%02" PRIx8 " <> 0x%02" PRIx8, i,file.oob[i],dev.oob[i]);
 					}
 				}
 			}
-			nand_fileio_cleanup(&dev);
-			nand_fileio_cleanup(&file);
-			return ERROR_FAIL;
+			verify_error = 1;
 		}
 
 		file.size -= bytes_read;
@@ -356,8 +355,9 @@ COMMAND_HANDLER(handle_nand_verify_command)
 	}
 
 	if (nand_fileio_finish(&file) == ERROR_OK) {
-		command_print(CMD_CTX, "verified file %s in NAND flash %s "
+		command_print(CMD_CTX, "verify %s file %s in NAND flash %s "
 			"up to offset 0x%8.8" PRIx32 " in %fs (%0.3f KiB/s)",
+			verify_error ? "FAIL" : "OK",
 			CMD_ARGV[1], CMD_ARGV[0], dev.address, duration_elapsed(&file.bench),
 			duration_kbps(&file.bench, dev.size));
 	}
