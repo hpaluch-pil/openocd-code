@@ -315,11 +315,37 @@ COMMAND_HANDLER(handle_nand_verify_command)
 			nand_fileio_cleanup(&file);
 			return ERROR_FAIL;
 		}
+#if 0
+		if (dev.page){
+			command_print(CMD_CTX,"dev.page=%p, dev.page_size=%u (0x%x)",dev.page, dev.page_size,dev.page_size);
+		}
+		if (dev.oob){
+			command_print(CMD_CTX,"dev.oob =%p, dev.oob_size =%u (0x%x)",dev.oob, dev.oob_size,dev.oob_size);
+		}
+#endif
 
 		if ((dev.page && memcmp(dev.page, file.page, dev.page_size)) ||
 				(dev.oob && memcmp(dev.oob, file.oob, dev.oob_size))) {
 			command_print(CMD_CTX, "NAND flash contents differ "
-				"at 0x%8.8" PRIx32, dev.address);
+				"at page address 0x%8.8" PRIx32, dev.address);
+			if (dev.page){
+				unsigned i=0;
+				for(i=0;i<dev.page_size;i++){
+					if (dev.page[i]!=file.page[i]){
+			command_print(CMD_CTX, "       "
+				"Data at 0x%8.8" PRIx32 " (offset in page: 0x%x) expected byte 0x%02" PRIx8 " <> 0x%02" PRIx8, dev.address+i,i,file.page[i],dev.page[i]);
+					}
+				}
+			}
+			if (dev.oob){
+				unsigned i=0;
+				for(i=0;i<dev.oob_size;i++){
+					if (dev.oob[i]!=file.oob[i]){
+			command_print(CMD_CTX, "       "
+				"OOB data at offset 0x%08x in OOB - expected byte 0x%02" PRIx8 " <> 0x%02" PRIx8, i,file.oob[i],dev.oob[i]);
+					}
+				}
+			}
 			nand_fileio_cleanup(&dev);
 			nand_fileio_cleanup(&file);
 			return ERROR_FAIL;
